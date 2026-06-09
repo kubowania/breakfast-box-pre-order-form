@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Morning Round — Breakfast Box Pre-Order</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+/* =========================================================
+   EDIT CONTENT IN THE CONFIG OBJECT (in the <script> below).
+   To use your own photos: add an /images folder next to this
+   file and point each box's "img" at e.g. "images/sunrise.jpg".
+   ========================================================= */
+:root {
+  --bg: #F4ECDB; --paper: #FFFDF8; --ink: #2C2018; --ink-soft: #7A6A58;
+  --line: #E2D4BD; --jam: #C13D2E; --jam-deep: #9C2E22; --honey: #E0A52F;
+  --herb: #2F7D78; --cream: #EBDDC4;
+  --shadow: 0 1px 2px rgba(43,33,24,.04), 0 8px 28px rgba(43,33,24,.07);
+  --radius: 16px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Hanken Grotesk", system-ui, sans-serif; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto 0; height: 320px;
+  background: radial-gradient(120% 90% at 20% -10%, rgba(224,165,47,.20), transparent 60%), radial-gradient(110% 80% at 95% -20%, rgba(193,61,46,.12), transparent 55%);
+  pointer-events: none; z-index: 0; }
+.wrap { position: relative; z-index: 1; max-width: 1060px; margin: 0 auto; padding: 28px 20px 140px; }
+
+header { padding: 18px 0 30px; }
+.eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--jam); font-weight: 600; margin: 0 0 10px; }
+h1 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 600; font-size: clamp(34px, 7vw, 58px); line-height: 1.02; margin: 0 0 12px; letter-spacing: -0.01em; }
+.lede { max-width: 48ch; color: var(--ink-soft); font-size: 16px; margin: 0; }
+
+.grid { display: grid; grid-template-columns: 1fr; gap: 28px; align-items: start; }
+@media (min-width: 880px) { .grid { grid-template-columns: 1.55fr 1fr; gap: 36px; } }
+
+.step { margin-bottom: 34px; }
+.step-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+.step-num { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 600; font-size: 15px; color: var(--paper); background: var(--ink); width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%; display: grid; place-items: center; transform: translateY(2px); }
+.step h2 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 600; font-size: 22px; margin: 0; }
+.step .hint { margin: 2px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+/* Menu */
+.menu { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 560px) { .menu { grid-template-columns: repeat(3, 1fr); } }
+.mcard { border: 1.5px solid var(--line); background: var(--paper); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.mphoto { aspect-ratio: 4 / 3; background: linear-gradient(135deg, var(--cream), #fff 70%); position: relative; display: grid; place-items: center; border-bottom: 1.5px solid var(--line); }
+.mphoto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mphoto .glyph { font-size: 40px; }
+.mbody { padding: 13px 14px 15px; }
+.mname { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 600; font-size: 18px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 11px; }
+.mdesc { font-size: 13px; color: var(--ink-soft); margin: 0 0 8px; }
+.mprice { font-weight: 700; font-size: 14px; }
+
+/* Dates */
+.dates { display: flex; gap: 12px; }
+@media (max-width: 520px) { .dates { flex-direction: column; } }
+.field { flex: 1; margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+.field input { width: 100%; border: 1.5px solid var(--line); background: var(--paper); border-radius: 12px; padding: 12px 14px; font: inherit; font-size: 16px; color: var(--ink); }
+.field input:focus-visible { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(224,165,47,.35); }
+
+/* Per-date planner */
+.plan { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.planhint { color: var(--ink-soft); font-size: 14px; background: var(--cream); border-radius: 12px; padding: 14px 16px; margin: 4px 0 0; }
+.dayrow { border: 1.5px solid var(--line); background: var(--paper); border-radius: 14px; padding: 12px 14px; }
+.dayrow.active { border-color: var(--ink); }
+.dayname { font-weight: 700; font-size: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dayname .picked { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.seg { display: flex; gap: 8px; }
+@media (max-width: 480px) { .seg { flex-direction: column; } }
+.opt { flex: 1; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 10px; padding: 9px 10px; font: inherit; cursor: pointer; text-align: center; transition: transform .1s ease, border-color .1s ease; display: flex; flex-direction: column; gap: 1px; line-height: 1.2; }
+.opt:hover { border-color: var(--ink); }
+.opt:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.opt .o-name { font-weight: 700; font-size: 14px; }
+.opt .o-price { font-size: 12px; opacity: .8; }
+.opt[aria-pressed="true"] { border-color: transparent; color: #fff; transform: translateY(-1px); }
+
+/* Ticket */
+.ticket-col { position: relative; }
+@media (min-width: 880px) { .ticket-col { position: sticky; top: 24px; } }
+.ticket { background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.ticket-top { background: var(--ink); color: #fff; padding: 18px 20px; }
+.ticket-top .biz { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 600; font-size: 18px; }
+.ticket-top .sub { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .7; margin-top: 2px; }
+.ticket-body { padding: 18px 20px; }
+.tk-row { margin-bottom: 16px; }
+.tk-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; margin-bottom: 4px; }
+.tk-value { font-size: 15px; font-weight: 600; }
+.tk-value.empty { color: var(--ink-soft); font-weight: 500; font-style: italic; }
+.tk-divider { border: none; border-top: 1.5px dashed var(--line); margin: 4px 0 16px; }
+.tk-list { display: flex; flex-direction: column; gap: 8px; }
+.tk-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.tk-item .d { font-weight: 700; min-width: 86px; }
+.tk-item .b { flex: 1; color: var(--ink-soft); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.tk-item .p { font-weight: 700; }
+.tk-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; }
+.tk-total .lbl { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+.tk-total .amt { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 600; font-size: 24px; }
+
+.btn { width: 100%; border: none; border-radius: 12px; padding: 15px 18px; font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; background: var(--jam); color: #fff; transition: background .14s ease, transform .1s ease; }
+.btn:hover { background: var(--jam-deep); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 3px solid var(--honey); outline-offset: 2px; }
+.btn-ghost { background: var(--paper); color: var(--ink); border: 1.5px solid var(--line); }
+.btn-ghost:hover { background: var(--cream); border-color: var(--ink); }
+.btn + .btn { margin-top: 10px; }
+.note { text-align: center; font-size: 12.5px; color: var(--ink-soft); margin: 12px 0 0; }
+.alert { background: #fbecec; border: 1px solid #e8c4c4; color: var(--jam-deep); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; font-weight: 600; margin-bottom: 14px; display: none; }
+.alert.show { display: block; }
+footer { text-align: center; color: var(--ink-soft); font-size: 12.5px; margin-top: 40px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Stay Pre-Order</p>
+    <h1 id="title">Morning Round</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <div class="grid">
+    <div>
+      <!-- Menu -->
+      <section class="step">
+        <div class="step-head">
+          <div class="step-num">1</div>
+          <div>
+            <h2>The boxes</h2>
+            <p class="hint">Choose your breakfast box for each morning. the colour key matches the picker.</p>
+          </div>
+        </div>
+        <div class="menu" id="menu"></div>
+      </section>
+
+      <!-- Dates + per-date planner -->
+      <section class="step">
+        <div class="step-head">
+          <div class="step-num">2</div>
+          <div>
+            <h2>Your dates</h2>
+            <p class="hint">Set your first and last morning, then choose a box for each day.</p>
+          </div>
+        </div>
+        <div class="dates">
+          <div class="field">
+            <label for="first">First morning</label>
+            <input id="first" type="date" />
+          </div>
+          <div class="field">
+            <label for="last">Last morning</label>
+            <input id="last" type="date" />
+          </div>
+        </div>
+        <div class="plan" id="plan"></div>
+      </section>
+
+      <!-- Details -->
+      <section class="step">
+        <div class="step-head">
+          <div class="step-num">3</div>
+          <div>
+            <h2>Your details</h2>
+            <p class="hint">So we know which room to deliver to.</p>
+          </div>
+        </div>
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" type="text" autocomplete="name" placeholder="e.g. Sam Carter" />
+        </div>
+        <div class="field">
+          <label for="room">Mood 22 Room</label>
+          <input id="room" type="text" autocomplete="off" placeholder="e.g. Room 214" />
+        </div>
+        <div class="field">
+          <label for="phone">Phone number</label>
+          <input id="phone" type="tel" autocomplete="tel" placeholder="e.g. 050 123 4567" />
+        </div>
+      </section>
+    </div>
+
+    <!-- Ticket -->
+    <div class="ticket-col">
+      <div class="ticket">
+        <div class="ticket-top">
+          <div class="biz" id="ticketBiz">Morning Round</div>
+          <div class="sub">Breakfast Box Pre-Order</div>
+        </div>
+        <div class="ticket-body">
+          <div class="alert" id="alert"></div>
+          <div class="tk-row">
+            <div class="tk-label">Name</div>
+            <div class="tk-value empty" id="tkName">Not added yet</div>
+          </div>
+          <div class="tk-row">
+            <div class="tk-label">Mood 22 Room</div>
+            <div class="tk-value empty" id="tkRoom">Not added yet</div>
+          </div>
+          <div class="tk-row">
+            <div class="tk-label">Phone number</div>
+            <div class="tk-value empty" id="tkPhone">Not added yet</div>
+          </div>
+          <hr class="tk-divider" />
+          <div class="tk-row">
+            <div class="tk-label">Your mornings</div>
+            <div class="tk-value empty" id="tkPlan">No mornings planned yet</div>
+          </div>
+          <div class="tk-total" id="tkTotalRow" style="display:none;">
+            <span class="lbl"><span id="tkCount">0</span> mornings</span>
+            <span class="amt" id="tkTotal"></span>
+          </div>
+          <hr class="tk-divider" />
+          <button class="btn" id="waSend" type="button">Send order on WhatsApp</button>
+          <button class="btn btn-ghost" id="download" type="button">Download PDF</button>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer id="footer"></footer>
+</div>
+
+<script>
+/* =========================================================
+   EDIT THIS CONFIG — the whole page reads from it.
+   ========================================================= */
+const CONFIG = {
+  businessName: "Breakfast Boxes",
+  tagline: "Breakfast boxes for your stay. Nostalgic tastes, locally sourced. Pick a box for each morning, then send your order.",
+  footer: "Homebrew Coffee · nostalgic tastes, locally sourced · order the night before",
+  currency: "AED",
+  whatsapp: "971585246957",          // digits only: country code + number, no "+"
+  whatsappDisplay: "+971 58 524 6957",
+  maxDays: 31, // safety cap on how long a stay can be
+
+  // The three boxes. Set "img" to a real photo (e.g. "images/traditional.jpg").
+  // NOTE: prices below are placeholders — set your real numbers.
+  boxes: [
+    { id: "traditional", name: "Traditional Twist", short: "Traditional", price: 70, color: "#E0A52F", fg: "#2C2018",
+      desc: "Labneh sourdough bagel with cucumber, zaatar and tomato, date muffin and black coffee.", img: "images/traditional.jpg", glyph: "🥯" },
+    { id: "habibi", name: "Health Habibi", short: "Habibi", price: 70, color: "#C13D2E", fg: "#FFFFFF",
+      desc: "Açai with banana, strawberry, orange slices, granola, peanut butter, dehydrated pineapple and mint. Banana bread with cardamom, black coffee.", img: "images/habibi.jpg", glyph: "🍓" },
+    { id: "vegan", name: "Very Vegan", short: "Vegan", price: 70, color: "#2F7D78", fg: "#FFFFFF",
+      desc: "Granola, probiotic coconut yoghurt (vegan), organic peanut butter, strawberries, banana, cinnamon and mint. Fresh banana and black coffee.", img: "images/vegan.jpg", glyph: "🌱" }
+  ]
+};
+
+/* ---------------- State: plan keyed by ISO date (YYYY-MM-DD) ---------------- */
+const state = { first: "", last: "", plan: {}, name: "", room: "", phone: "" };
+const boxById = id => CONFIG.boxes.find(b => b.id === id);
+const money = n => CONFIG.currency + " " + n;
+
+/* ---------------- Date helpers (local, no timezone drift) ---------------- */
+function isoToLocal(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); }
+function localToIso(dt) {
+  const y = dt.getFullYear(), m = String(dt.getMonth() + 1).padStart(2, "0"), d = String(dt.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + d;
+}
+const todayIso = localToIso(new Date());
+function fmtShort(iso) { return isoToLocal(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); }
+function fmtLong(iso)  { return isoToLocal(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" }); }
+
+// returns { list:[iso...], capped:bool, invalid:bool }
+function dateRange() {
+  if (!state.first || !state.last) return { list: [], capped: false, invalid: false };
+  const start = isoToLocal(state.first), end = isoToLocal(state.last);
+  if (end < start) return { list: [], capped: false, invalid: true };
+  const list = [];
+  let cur = start;
+  while (cur <= end) {
+    list.push(localToIso(cur));
+    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
+    if (list.length >= CONFIG.maxDays) break;
+  }
+  const full = Math.round((end - start) / 86400000) + 1;
+  return { list, capped: full > CONFIG.maxDays, invalid: false };
+}
+
+/* ---------------- Apply config text ---------------- */
+document.getElementById("title").textContent = CONFIG.businessName;
+document.getElementById("ticketBiz").textContent = CONFIG.businessName;
+document.getElementById("lede").textContent = CONFIG.tagline;
+document.getElementById("footer").textContent = CONFIG.footer;
+document.title = CONFIG.businessName + " — Breakfast Box Pre-Order";
+
+/* ---------------- Build menu ---------------- */
+const menuEl = document.getElementById("menu");
+CONFIG.boxes.forEach(box => {
+  const card = document.createElement("div");
+  card.className = "mcard";
+  const photo = document.createElement("div");
+  photo.className = "mphoto";
+  const glyph = document.createElement("div");
+  glyph.className = "glyph";
+  glyph.textContent = box.glyph || "🍽️";
+  photo.appendChild(glyph);
+  if (box.img) {
+    const img = new Image();
+    img.alt = box.name;
+    img.onload = () => { glyph.style.display = "none"; photo.appendChild(img); };
+    img.src = box.img;
+  }
+  const body = document.createElement("div");
+  body.className = "mbody";
+  body.innerHTML = '<div class="mname"><span class="dot"></span><span class="nm"></span></div><div class="mdesc"></div><div class="mprice"></div>';
+  body.querySelector(".dot").style.background = box.color;
+  body.querySelector(".nm").textContent = box.name;
+  body.querySelector(".mdesc").textContent = box.desc;
+  body.querySelector(".mprice").textContent = money(box.price);
+  card.appendChild(photo); card.appendChild(body);
+  menuEl.appendChild(card);
+});
+
+/* ---------------- Date inputs ---------------- */
+const firstEl = document.getElementById("first");
+const lastEl = document.getElementById("last");
+firstEl.min = todayIso;
+lastEl.min = todayIso;
+
+firstEl.addEventListener("change", () => {
+  state.first = firstEl.value;
+  lastEl.min = state.first || todayIso;
+  // convenience: if last is empty or now before first, match it to first
+  if (state.first && (!state.last || isoToLocal(state.last) < isoToLocal(state.first))) {
+    state.last = state.first; lastEl.value = state.last;
+  }
+  buildPlan();
+});
+lastEl.addEventListener("change", () => { state.last = lastEl.value; buildPlan(); });
+
+/* ---------------- Build per-date planner ---------------- */
+const planEl = document.getElementById("plan");
+
+function buildPlan() {
+  const { list, capped, invalid } = dateRange();
+  // prune selections that fall outside the current range
+  Object.keys(state.plan).forEach(k => { if (!list.includes(k)) delete state.plan[k]; });
+
+  planEl.innerHTML = "";
+  if (invalid) { planEl.innerHTML = '<p class="planhint">Your last morning is before the first — please check the dates.</p>'; render(); return; }
+  if (!list.length) { planEl.innerHTML = '<p class="planhint">Choose your dates above to plan each morning.</p>'; render(); return; }
+
+  list.forEach(iso => {
+    const row = document.createElement("div");
+    row.className = "dayrow";
+    row.dataset.date = iso;
+    const head = document.createElement("div");
+    head.className = "dayname";
+    head.innerHTML = '<span>' + fmtShort(iso) + '</span><span class="picked"></span>';
+    row.appendChild(head);
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    CONFIG.boxes.forEach(box => {
+      const opt = document.createElement("button");
+      opt.type = "button";
+      opt.className = "opt";
+      opt.setAttribute("aria-pressed", "false");
+      opt.setAttribute("aria-label", fmtShort(iso) + ": " + box.name + ", " + money(box.price));
+      opt.innerHTML = '<span class="o-name"></span><span class="o-price"></span>';
+      opt.querySelector(".o-name").textContent = box.short || box.name;
+      opt.querySelector(".o-price").textContent = money(box.price);
+      opt.addEventListener("click", () => {
+        if (state.plan[iso] === box.id) delete state.plan[iso]; else state.plan[iso] = box.id;
+        paintRow(row); render();
+      });
+      seg.appendChild(opt);
+    });
+    row.appendChild(seg);
+    planEl.appendChild(row);
+    paintRow(row);
+  });
+
+  if (capped) {
+    const n = document.createElement("p");
+    n.className = "planhint";
+    n.textContent = "Showing the first " + CONFIG.maxDays + " mornings. For a longer stay, place a second order.";
+    planEl.appendChild(n);
+  }
+  render();
+}
+
+function paintRow(row) {
+  const iso = row.dataset.date;
+  const chosen = state.plan[iso];
+  row.classList.toggle("active", !!chosen);
+  row.querySelectorAll(".opt").forEach((opt, i) => {
+    const box = CONFIG.boxes[i];
+    const on = box.id === chosen;
+    opt.setAttribute("aria-pressed", on ? "true" : "false");
+    opt.style.background = on ? box.color : "";
+    opt.style.color = on ? box.fg : "";
+  });
+  const picked = boxById(chosen);
+  row.querySelector(".picked").textContent = picked ? (picked.short || picked.name) : "";
+}
+
+/* ---------------- Inputs ---------------- */
+document.getElementById("name").addEventListener("input", e => { state.name = e.target.value.trim(); render(); });
+document.getElementById("room").addEventListener("input", e => { state.room = e.target.value.trim(); render(); });
+document.getElementById("phone").addEventListener("input", e => { state.phone = e.target.value.trim(); render(); });
+
+/* ---------------- Derived ---------------- */
+function orderedDates() { return dateRange().list.filter(d => state.plan[d]); }
+function total() { return orderedDates().reduce((s, d) => s + boxById(state.plan[d]).price, 0); }
+
+/* ---------------- Live ticket ---------------- */
+function render() {
+  const nameEl = document.getElementById("tkName");
+  const roomEl = document.getElementById("tkRoom");
+  const phoneEl = document.getElementById("tkPhone");
+  nameEl.textContent = state.name || "Not added yet";
+  nameEl.classList.toggle("empty", !state.name);
+  roomEl.textContent = state.room || "Not added yet";
+  roomEl.classList.toggle("empty", !state.room);
+  phoneEl.textContent = state.phone || "Not added yet";
+  phoneEl.classList.toggle("empty", !state.phone);
+
+  const dates = orderedDates();
+  const out = document.getElementById("tkPlan");
+  const totalRow = document.getElementById("tkTotalRow");
+  if (dates.length) {
+    out.classList.remove("empty");
+    out.innerHTML = '<div class="tk-list">' + dates.map(d => {
+      const b = boxById(state.plan[d]);
+      return '<div class="tk-item"><span class="d">' + fmtShort(d) + '</span>' +
+             '<span class="b"><span class="dot" style="background:' + b.color + '"></span>' + (b.short || b.name) + '</span>' +
+             '<span class="p">' + money(b.price) + '</span></div>';
+    }).join("") + '</div>';
+    totalRow.style.display = "flex";
+    document.getElementById("tkCount").textContent = dates.length;
+    document.getElementById("tkTotal").textContent = money(total());
+  } else {
+    out.classList.add("empty");
+    out.textContent = "No mornings planned yet";
+    totalRow.style.display = "none";
+  }
+}
+
+/* ---------------- Plain-text order (for WhatsApp + share) ---------------- */
+function orderText() {
+  const dates = orderedDates();
+  const lines = [];
+  lines.push(CONFIG.businessName + " — Breakfast Box Pre-Order");
+  lines.push("");
+  lines.push("Name: " + (state.name || "-"));
+  lines.push("Mood 22 Room: " + (state.room || "-"));
+  lines.push("Phone: " + (state.phone || "-"));
+  lines.push("");
+  lines.push("Mornings:");
+  dates.forEach(d => {
+    const b = boxById(state.plan[d]);
+    lines.push("- " + fmtLong(d) + ": " + b.name + " (" + money(b.price) + ")");
+  });
+  lines.push("");
+  lines.push("Total: " + money(total()) + " (" + dates.length + " mornings)");
+  return lines.join("\n");
+}
+
+/* ---------------- Validation ---------------- */
+function validate() {
+  const p = [];
+  if (orderedDates().length === 0) p.push("pick a box for at least one morning");
+  if (!state.name) p.push("add your name");
+  return p;
+}
+function showAlert(msg) {
+  const a = document.getElementById("alert");
+  if (!msg) { a.classList.remove("show"); a.textContent = ""; return; }
+  a.textContent = msg; a.classList.add("show");
+}
+
+/* ---------------- Buttons ---------------- */
+const waBtn = document.getElementById("waSend");
+const dlBtn = document.getElementById("download");
+
+// Can this device share files (lets us attach the PDF to WhatsApp via the share sheet)?
+let canShareFiles = false;
+try {
+  const probe = new File(["pdf"], "probe.pdf", { type: "application/pdf" });
+  canShareFiles = !!(navigator.canShare && navigator.canShare({ files: [probe] }));
+} catch (e) { canShareFiles = false; }
+
+dlBtn.textContent = canShareFiles ? "Save PDF" : "Download PDF";
+document.getElementById("note").innerHTML =
+  '“Send order on WhatsApp” opens a chat to <a href="https://wa.me/' + CONFIG.whatsapp +
+  '" target="_blank" rel="noopener" style="color:var(--jam);font-weight:700;text-decoration:none;white-space:nowrap;">' +
+  CONFIG.whatsappDisplay + '</a> with your order ready to send. Once sent, you will be asked to pay via a payment link to secure your order.';
+
+// One tap: open WhatsApp to your number with the full order pre-typed.
+waBtn.addEventListener("click", () => {
+  const problems = validate();
+  if (problems.length) { showAlert("Almost there - please " + problems.join(", ") + "."); return; }
+  showAlert("");
+  const url = "https://wa.me/" + CONFIG.whatsapp + "?text=" + encodeURIComponent(orderText());
+  window.open(url, "_blank");
+});
+
+// Share the actual PDF (mobile share sheet → WhatsApp), or download it (desktop).
+dlBtn.addEventListener("click", async () => {
+  const problems = validate();
+  if (problems.length) { showAlert("Almost there — please " + problems.join(", ") + "."); return; }
+  showAlert("");
+  const { doc, filename } = makePdf();
+  if (canShareFiles) {
+    try {
+      const file = new File([doc.output("blob")], filename, { type: "application/pdf" });
+      await navigator.share({ files: [file], title: "Breakfast order", text: orderText() });
+      return;
+    } catch (e) { /* user cancelled or share failed — fall back to a normal download */ }
+  }
+  doc.save(filename);
+});
+
+function makePdf() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const dates = orderedDates();
+  const now = new Date();
+  const placed = now.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }) +
+                 " · " + now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const M = 56, W = doc.internal.pageSize.getWidth(), right = W - M;
+
+  doc.setFillColor(43, 33, 24); doc.rect(0, 0, W, 96, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(24); doc.text(CONFIG.businessName, M, 50);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(220, 210, 200);
+  doc.text("BREAKFAST BOX PRE-ORDER", M, 70);
+
+  let y = 140;
+  doc.setTextColor(120, 106, 91); doc.setFontSize(10); doc.text("ORDER PLACED", M, y);
+  doc.setTextColor(43, 33, 24); doc.setFontSize(13); doc.text(placed, M, y + 18);
+  y += 54;
+
+  hr(y); y += 24;
+  label("CUSTOMER", M, y); value(state.name, M, y + 18);
+  label("MOOD 22 ROOM", W / 2, y); value(state.room || "-", W / 2, y + 18);
+  y += 50;
+  label("PHONE NUMBER", M, y); value(state.phone || "-", M, y + 18);
+  y += 44;
+
+  hr(y); y += 26;
+  label("MORNINGS", M, y); y += 22;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(120, 106, 91);
+  doc.text("DATE", M, y); doc.text("BOX", M + 170, y); doc.text("PRICE", right, y, { align: "right" });
+  y += 8; hr(y); y += 20;
+
+  doc.setFontSize(13);
+  dates.forEach(d => {
+    const b = boxById(state.plan[d]);
+    doc.setFont("helvetica", "bold"); doc.setTextColor(43, 33, 24); doc.text(fmtLong(d), M, y);
+    doc.setFont("helvetica", "normal"); doc.text(b.name, M + 170, y);
+    doc.text(money(b.price), right, y, { align: "right" });
+    y += 24;
+    if (y > doc.internal.pageSize.getHeight() - 120) { doc.addPage(); y = 80; }
+  });
+
+  y += 6; hr(y); y += 26;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(120, 106, 91);
+  doc.text(dates.length + " MORNINGS", M, y);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(193, 61, 46);
+  doc.text("Total  " + money(total()), right, y + 2, { align: "right" });
+
+  y = doc.internal.pageSize.getHeight() - 60; hr(y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(150, 138, 124);
+  doc.text(CONFIG.footer, M, y + 22);
+
+  const safe = (state.name || "guest").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const filename = "breakfast-order-" + safe + "-" + localToIso(now) + ".pdf";
+  return { doc, filename };
+
+  function hr(yy) { doc.setDrawColor(226, 212, 189); doc.setLineWidth(1); doc.line(M, yy, right, yy); }
+  function label(t, x, yy) { doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(120, 106, 91); doc.text(t, x, yy); }
+  function value(t, x, yy) { doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(43, 33, 24); doc.text(t || "-", x, yy); }
+}
+
+/* ---------------- First paint ---------------- */
+buildPlan();
+</script>
+</body>
+</html>
